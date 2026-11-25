@@ -17,7 +17,10 @@ vi.mock("@earendil-works/pi-coding-agent", () => ({
     return { reload: vi.fn().mockResolvedValue(undefined) };
   }),
   getAgentDir: vi.fn(() => "/tmp/agent-dir"),
-  SessionManager: { inMemory: vi.fn(() => ({ getSessionId: () => "test" })) },
+  SessionManager: {
+    inMemory: vi.fn(() => ({ getSessionId: () => "test" })),
+    create: vi.fn(() => ({ getSessionId: () => "test", appendSessionInfo: vi.fn() })),
+  },
   SettingsManager: { create: vi.fn(() => ({})) },
 }));
 

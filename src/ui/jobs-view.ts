@@ -138,6 +138,17 @@ export class JobsView implements Component {
       this.refresh();
       return;
     }
+    if (matchesKey(data, "p")) {
+      // Toggle where a model job's separate session lives: persisted to the
+      // project's session dir (visible in pi-web /resume lists) ↔ in-memory.
+      // undefined means persisted, so first press opts out. Inline jobs: no-op.
+      if (this.isSelectionForeign() || !sel.model) return;
+      const persistSession = sel.persistSession === false;
+      this.storage.updateJob(sel.id, { persistSession });
+      this.scheduler.updateJob(sel.id, { ...sel, persistSession });
+      this.refresh();
+      return;
+    }
     if (matchesKey(data, "x")) {
       if (this.isSelectionForeign()) return;
       this.confirm = { kind: "remove", id: sel.id, name: sel.name };
@@ -171,7 +182,7 @@ export class JobsView implements Component {
       lines.push(` ${this.theme.fg("accent", this.theme.bold("Jobs"))}  —  a add   q quit`);
     } else {
       lines.push(
-        ` ${this.theme.fg("accent", this.theme.bold("Jobs"))}  —  ↑↓ select   a add   t toggle   s scope   x remove   c cleanup   q quit`,
+        ` ${this.theme.fg("accent", this.theme.bold("Jobs"))}  —  ↑↓ select   a add   t toggle   s scope   p persist   x remove   c cleanup   q quit`,
       );
     }
     lines.push(rule);
@@ -244,7 +255,9 @@ export class JobsView implements Component {
       SCHED_W,
     ).padEnd(SCHED_W);
     const prompt = truncate(job.prompt, PROMPT_W).padEnd(PROMPT_W);
-    const tag = !job.session && !isForeign ? this.theme.fg("dim", " [shared]") : "";
+    const tag =
+      (!job.session && !isForeign ? this.theme.fg("dim", " [shared]") : "") +
+      (job.model && job.persistSession === false ? this.theme.fg("dim", " [in-mem]") : "");
 
     return ` ${indicator} ${icon} ${name}  ${sched}  ${prompt}${tag}`;
   }

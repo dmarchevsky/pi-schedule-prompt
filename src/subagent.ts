@@ -3,7 +3,8 @@
  *
  * Used when a scheduled job has `model` set: spawn a fresh AgentSession with
  * the chosen model, run the prompt to completion, return the assistant's text.
- * No subprocess, no extension recursion (noExtensions: true), no persistence.
+ * No subprocess, no extension recursion (noExtensions: true). Sessions persist
+ * to pi's session directory unless the job opts out (persistSession: false).
  */
 
 import type { Model } from "@earendil-works/pi-ai";
@@ -31,6 +32,15 @@ export interface RunSubagentOptions {
   extensions?: boolean | string[];
   /** If true, load all skills. If an array, only those named. Default undefined (none). */
   skills?: boolean | string[];
+  /**
+   * Persist the session to pi's default session directory for this project
+   * (~/.pi/agent/sessions/<cwd>/) instead of keeping it in memory, so the run
+   * shows up in pi-web's session list and pi's /resume. Default false; the
+   * scheduler resolves the job's default (true) before calling.
+   */
+  persistSession?: boolean;
+  /** Display name for the persisted session (session_info entry). Ignored unless persistSession. */
+  sessionName?: string;
 }
 
 export function resolveModel(
@@ -241,7 +251,14 @@ export async function runSubagentOnce(
     const { session } = await createAgentSession({
       cwd: ctx.cwd,
       agentDir,
-      sessionManager: SessionManager.inMemory(ctx.cwd),
+      // In-memory unless persisted: the run's output is delivered back to the
+      // parent session as a snippet, so nothing must survive the process. With
+      // persistSession the run is written to pi's default session directory
+      // for this project (the folder where the job was created — a job only
+      // fires in its own project), making it visible in pi-web's session list.
+      sessionManager: options.persistSession
+        ? SessionManager.create(ctx.cwd)
+        : SessionManager.inMemory(ctx.cwd),
       settingsManager: SettingsManager.create(ctx.cwd, agentDir),
       // Share the parent's runtime only when the subagent loads no extensions:
       // extension provider (un)registrations write into whatever runtime the
@@ -260,6 +277,14 @@ export async function runSubagentOnce(
     // Whether extensions may have received session_start (and so need session_shutdown).
     let extensionsBound = false;
     try {
+      // Name the persisted session so the list (pi-web, /resume) shows which
+      // job produced it. session_info is a setup entry: no file is written
+      // until the first message lands, so a run aborted before its prompt
+      // starts still leaves nothing behind (an abort mid-run leaves the file
+      // with the prompt, like any pi session).
+      if (options.persistSession && options.sessionName) {
+        session.sessionManager.appendSessionInfo(options.sessionName);
+      }
       // Checked before bindExtensions so an aborted job doesn't start (and
       // then shut down) its extensions. Teardown runs in finally.
       if (signal?.aborted) return { ok: false, error: ABORTED_BEFORE_START };

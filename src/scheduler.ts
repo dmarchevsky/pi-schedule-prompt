@@ -569,7 +569,17 @@ export class CronScheduler {
       try {
         let result: SubagentResult;
         try {
-          result = await runSubagentOnce(this.ctx, job.prompt, model, controller.signal, { extensions: job.extensions, skills: job.skills });
+          // persistSession defaults ON for model jobs: the run's transcript is
+          // written to this project's pi session directory so it shows up in
+          // pi-web's session list / pi's /resume; jobs opt out with
+          // persistSession: false (in-memory, snippet-only as before).
+          const persist = job.persistSession !== false;
+          result = await runSubagentOnce(this.ctx, job.prompt, model, controller.signal, {
+            extensions: job.extensions,
+            skills: job.skills,
+            persistSession: persist,
+            sessionName: persist ? `scheduled: ${job.name}` : undefined,
+          });
         } finally {
           this.activeSubagents.delete(controller);
         }
