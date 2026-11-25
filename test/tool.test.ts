@@ -414,6 +414,45 @@ describe("schedule_prompt — extensions/skills", () => {
       expect(result.details?.error).toBeUndefined();
       expect(result.details?.jobs?.[0].skills).toBeUndefined();
     });
+
+    it("stores persistSession when provided", async () => {
+      const { tool } = buildTool();
+      const result = await tool.execute(
+        "call",
+        {
+          action: "add",
+          schedule: "+10s",
+          type: "once",
+          prompt: "test",
+          model: "haiku",
+          persistSession: false,
+        } as any,
+        undefined,
+        undefined,
+        makeCtx(),
+      );
+      expect(result.details?.error).toBeUndefined();
+      expect(result.details?.jobs?.[0].persistSession).toBe(false);
+    });
+
+    it("defaults persistSession to undefined (= persist on) when not provided", async () => {
+      const { tool } = buildTool();
+      const result = await tool.execute(
+        "call",
+        {
+          action: "add",
+          schedule: "+10s",
+          type: "once",
+          prompt: "test",
+          model: "haiku",
+        } as any,
+        undefined,
+        undefined,
+        makeCtx(),
+      );
+      expect(result.details?.error).toBeUndefined();
+      expect(result.details?.jobs?.[0].persistSession).toBeUndefined();
+    });
   });
 
   describe("update", () => {
@@ -471,6 +510,34 @@ describe("schedule_prompt — extensions/skills", () => {
       );
       expect(result.details?.error).toBeUndefined();
       expect(storage.getJob("j2").skills).toBe(false);
+    });
+
+    it("accepts setting persistSession=false on an existing subagent job", async () => {
+      const { tool, storage } = buildTool([exampleJob({ id: "j3", model: "haiku" })]);
+      const result = await tool.execute(
+        "call",
+        { action: "update", jobId: "j3", persistSession: false } as any,
+        undefined,
+        undefined,
+        makeCtx(),
+      );
+      expect(result.details?.error).toBeUndefined();
+      expect(storage.getJob("j3").persistSession).toBe(false);
+    });
+
+    it("accepts setting persistSession=true back on", async () => {
+      const { tool, storage } = buildTool([
+        exampleJob({ id: "j3", model: "haiku", persistSession: false }),
+      ]);
+      const result = await tool.execute(
+        "call",
+        { action: "update", jobId: "j3", persistSession: true } as any,
+        undefined,
+        undefined,
+        makeCtx(),
+      );
+      expect(result.details?.error).toBeUndefined();
+      expect(storage.getJob("j3").persistSession).toBe(true);
     });
   });
 });

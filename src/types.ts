@@ -175,6 +175,12 @@ export const CronToolParams = Type.Object({
       }),
     ])
   ),
+  persistSession: Type.Optional(
+    Type.Boolean({
+      description:
+        "Only for jobs with 'model' set. If true (the default), the separate session's transcript is saved to this project's pi session directory, so each run shows up in pi-web's session list and pi's /resume, named 'scheduled: <job name>'. Set false to keep runs in memory only (the snippet is still posted to this chat).",
+    })
+  ),
 });
 
 export type CronToolParamsType = Static<typeof CronToolParams>;
