@@ -279,7 +279,9 @@ export async function runSubagentOnce(
     try {
       // Name the persisted session so the list (pi-web, /resume) shows which
       // job produced it. session_info is a setup entry: no file is written
-      // until the first message arrives, so aborted runs still leave nothing.
+      // until the first message lands, so a run aborted before its prompt
+      // starts still leaves nothing behind (an abort mid-run leaves the file
+      // with the prompt, like any pi session).
       if (options.persistSession && options.sessionName) {
         session.sessionManager.appendSessionInfo(options.sessionName);
       }
