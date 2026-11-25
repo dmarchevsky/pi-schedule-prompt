@@ -1195,7 +1195,12 @@ describe("CronScheduler — extensions/skills", () => {
     await vi.waitFor(() => expect(pi.sendMessage).toHaveBeenCalledTimes(2));
 
     const options = mockRunSubagentOnce.mock.calls[0][4];
-    expect(options).toEqual({ extensions: true, skills: undefined });
+    expect(options).toEqual({
+      extensions: true,
+      skills: undefined,
+      persistSession: true,
+      sessionName: "scheduled: " + job.name,
+    });
   });
 
   it("passes extensions=false to runSubagentOnce when job has no extensions", async () => {
@@ -1208,7 +1213,26 @@ describe("CronScheduler — extensions/skills", () => {
     await vi.waitFor(() => expect(pi.sendMessage).toHaveBeenCalledTimes(2));
 
     const options = mockRunSubagentOnce.mock.calls[0][4];
-    expect(options).toEqual({ extensions: undefined, skills: undefined });
+    expect(options).toEqual({
+      extensions: undefined,
+      skills: undefined,
+      persistSession: true, // default on: model-job runs persist to the project's session dir
+      sessionName: "scheduled: " + job.name,
+    });
+  });
+
+  it("passes persistSession=false through when the job opts out", async () => {
+    mockRunSubagentOnce.mockResolvedValue({ ok: true, text: "OK" });
+    const pi = makePi();
+    const job = exampleJob({ model: "haiku", persistSession: false });
+    const scheduler = new CronScheduler(makeStorage([job]), pi, makeCtx());
+
+    (scheduler as any).executeJobInSubagent(job);
+    await vi.waitFor(() => expect(pi.sendMessage).toHaveBeenCalledTimes(2));
+
+    const options = mockRunSubagentOnce.mock.calls[0][4];
+    expect(options.persistSession).toBe(false);
+    expect(options.sessionName).toBeUndefined();
   });
 
   it("passes extensions=false to runSubagentOnce when job has extensions=false", async () => {
@@ -1221,7 +1245,12 @@ describe("CronScheduler — extensions/skills", () => {
     await vi.waitFor(() => expect(pi.sendMessage).toHaveBeenCalledTimes(2));
 
     const options = mockRunSubagentOnce.mock.calls[0][4];
-    expect(options).toEqual({ extensions: false, skills: undefined });
+    expect(options).toEqual({
+      extensions: false,
+      skills: undefined,
+      persistSession: true,
+      sessionName: "scheduled: " + job.name,
+    });
   });
 });
 

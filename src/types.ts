@@ -66,6 +66,13 @@ export interface CronJob {
   extensions?: boolean | string[];
   /** Only for jobs with `model` set. If true, loads all skills. If an array of skill names, only those skills. Default undefined (none). */
   skills?: boolean | string[];
+  /**
+   * Only for jobs with `model` set. Whether the separate session's transcript is
+   * persisted to this project's pi session directory (visible in pi-web's
+   * session list and pi's /resume) instead of staying in memory.
+   * Default true; set false to keep runs ephemeral (snippet-only delivery).
+   */
+  persistSession?: boolean;
   /** Session id this job is bound to. When absent, every pi in the cwd loads it. */
   session?: string;
 }
