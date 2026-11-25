@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { JobsView } from "../src/ui/jobs-view.js";
 import type { CronJob } from "../src/types.ts";
+import { JobsView } from "../src/ui/jobs-view.js";
 
 const theme = {
   fg: () => (s: string) => s,
