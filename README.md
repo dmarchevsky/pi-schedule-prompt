@@ -65,7 +65,7 @@ Get prompted to do something once at a specific time:
 - ✓ **Human-readable display**: "every minute", "daily at 9:00" instead of raw cron expressions
 - ✓ **Status tracking**: next run, last run, execution count, errors, prompt preview
 - ✓ **Flexible scheduling**: 6-field cron, intervals (5m, 1h), relative time (+10s), ISO timestamps
-- ✓ **User commands**: `/schedule-prompt` opens a `Jobs` overlay (hotkey-driven: `↑↓` select, `a` add, `t` toggle enabled, `s` toggle scope, `x` remove, `c` cleanup) and a `Settings` submenu
+- ✓ **User commands**: `/schedule-prompt` opens a `Jobs` overlay (hotkey-driven: `↑↓` select, `a` add, `t` toggle enabled, `s` toggle scope, `p` toggle session persistence (model jobs), `x` remove, `c` cleanup) and a `Settings` submenu
 - ✓ **Persistent settings**: widget visibility persists across sessions and package upgrades (project file overrides global defaults)
 - ✓ **Safety features**: duplicate name prevention, infinite loop detection, past timestamp handling
 
@@ -122,7 +122,7 @@ The widget displays below your editor (only when jobs exist):
 
 `/schedule-prompt` opens a two-item menu:
 
-- **Jobs** — full-screen overlay listing every scheduled prompt in this cwd. Your session's jobs are at the top; jobs bound to other sessions render read-only below. Hotkeys: `↑`/`↓` select, `a` add (opens the input series — name/type/schedule/prompt/scope/confirm), `t` toggle enabled, `s` toggle scope (session-bound ↔ shared with all pi sessions in this project), `x` remove (with `y/n` confirm), `c` cleanup all disabled jobs, `q`/`esc` close.
+- **Jobs** — full-screen overlay listing every scheduled prompt in this cwd. Your session's jobs are at the top; jobs bound to other sessions render read-only below. Hotkeys: `↑`/`↓` select, `a` add (opens the input series — name/type/schedule/prompt/scope/confirm), `t` toggle enabled, `s` toggle scope (session-bound ↔ shared with all pi sessions in this project), `p` toggle persistence for model jobs (persisted to the project's session folder ↔ in-memory; see **Run in a separate agent session**), `x` remove (with `y/n` confirm), `c` cleanup all disabled jobs, `q`/`esc` close.
 - **Settings** — widget visibility and the default scope for new jobs (`Bind new jobs to session: yes/no`). Persists across sessions.
 
 ### Tool Parameters (`schedule_prompt`)
@@ -140,6 +140,7 @@ The widget displays below your editor (only when jobs exist):
 | `notify` | boolean | no | Subagent-only. If `true`, the parent agent is woken to react to the subagent's result. Default `false` (result shown in chat, parent not interrupted). No-op for inline (no-model) jobs — the prompt itself already wakes the parent. Recommended only for low-frequency jobs |
 | `extensions` | boolean or string[] | no | Subagent-only. If `true`, loads all registered extensions; an array of package names loads only those. Unset or empty array = none (default). Enabling extensions also grants the subagent the full builtin toolset (not just the default read/write/bash set) — required for extension-provided tools to activate. No-op for inline (no-model) jobs |
 | `skills` | boolean or string[] | no | Subagent-only. If `true`, loads all skills; an array of skill names loads only those. Unset or empty array = none (default). No-op for inline (no-model) jobs |
+| `persistSession` | boolean | no | Subagent-only. Default `true`: the separate session's transcript is saved to this project's pi session directory (`~/.pi/agent/sessions/…`), so each run appears in pi-web's session list and pi's `/resume`, named `scheduled: <job name>`. Set `false` to keep runs in memory only — the chat snippet is delivered either way. Opt out per job in the `Jobs` overlay with `p` |
 
 ### Schedule Formats
 
@@ -287,6 +288,8 @@ By default a scheduled prompt is injected into your current chat. Set `model` on
 `model` is permissive: pass a fuzzy name (`haiku`, `sonnet`) or fully qualified `provider/model-id`. The first match in the available model registry is used. When the job fires you'll see a `🕐 Scheduled (subagent: <model>)` marker in chat, followed by a `✓ finished` (or `✗ failed`) marker with the response snippet once the subagent completes.
 
 By default the result is shown in chat but the parent agent is **not** woken up — you read it, the agent isn't interrupted. Set `notify: true` on the job if you want the parent to react to each completion (e.g. for autonomous workflows). Recommended only for low-frequency jobs; a `notify: true` recurring job that fires every 5 minutes will trigger a parent-agent turn every 5 minutes.
+
+Each run's separate session is **persisted by default** to this project's pi session directory (the folder where the schedule was created), so you can open it in pi-web or resume it with pi's `/resume`; it is named `scheduled: <job name>` in the session list. Set `persistSession: false` on the job (or toggle it with `p` in the `Jobs` overlay, shown as `[in-mem]`) to keep runs in memory only — the chat snippet is delivered either way. Note that a recurring persisted job adds one session file per fire; delete them like any other session.
 
 > **Heads up:** Subagent jobs run unattended at fire time with the full default tool set (`bash`, `read`, `edit`, `write`, …) under your credentials. Treat persisted jobs in the project's job file as you would any auto-executed task — review prompts before adding, especially anything that mutates files or shells out.
 

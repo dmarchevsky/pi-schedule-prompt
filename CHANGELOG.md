@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Separate-session (`model`) jobs now **persist their run by default**: each fire writes its session transcript to the project's pi session directory (the folder where the schedule was created), named `scheduled: <job name>`, so runs are visible in pi-web's session list and pi's `/resume` instead of living only in the firing process. Opt out per job with the `schedule_prompt` parameter `persistSession: false` (add or update) or the `p` hotkey in the `Jobs` overlay (opted-out jobs show `[in-mem]`); the chat snippet is delivered either way.
+
 ## [0.5.2] - 2026-11-20
 
 ### Added
